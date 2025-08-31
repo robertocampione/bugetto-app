@@ -271,13 +271,11 @@ export default function OperationForm() {
                 <SelectItem value="Vendita">Vendita</SelectItem>
                 <SelectItem value="Dividendo">Dividendo</SelectItem>
                 <SelectItem value="Staking">Staking</SelectItem>
-                <SelectItem value="Trasferimento Entrata">
-                  Trasferimento Entrata
-                </SelectItem>
-                <SelectItem value="Trasferimento Uscita">
-                  Trasferimento Uscita
-                </SelectItem>
+                <SelectItem value="Spesa">Spesa</SelectItem>
+                <SelectItem value="Movimento Interno">Movimento Interno</SelectItem>
+                <SelectItem value="Interessi">Interessi</SelectItem>
                 <SelectItem value="Commissione">Commissione</SelectItem>
+                <SelectItem value="Donazione">Donazione</SelectItem>
               </SelectContent>
             </Select>
           </div>
