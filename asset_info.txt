@@ -1,0 +1,14 @@
+id,symbol,name,currency,type,category,isin,visible
+1,ACN,Accenture,USD,EQUITY,Company Stock,IE00B4BNMY34,1
+2,ETH-EUR,Ethereum,Euro,CRYPTOCURRENCY,Crypto,,0
+3,BTC-EUR,Bitcoin,Euro,CRYPTOCURRENCY,Bitcoin,,1
+4,EXH1D.XD,iShares STOXX Europe 600 Oil & Gas,Euro ,ETF,Other Asset,DE000A0H08M3,0
+5,EUR,EUR,Euro,Liquidi,Liquidità,,1
+6,USD,USD,USD,Liquidi,Liquidità,,1
+7,EUNLD.XD,iShares Core MSCI World,Euro,ETF,Golden Butterfly,IE00B4L5Y983,1
+8,IUSND.XD,MSCI World Small Cap Index,Euro,ETF,Golden Butterfly,IE00B4L5YC18,1
+9,IS04.DE,IShares USD Treasury Bond 20+yr,USD,ETF,Golden Butterfly,IE00B1FZS798,1
+10,IBCCD.XD,IShares USD Treasury Bond 0-1yr,USD,ETF,Golden Butterfly,IE00B2QXKF07,1
+11,GOLD-EUR.PA,Amundi Physical Gold,Euro,EQUITY,Golden Butterfly,FR0013416716,1
+12,IS05.DE,IShares EUR Treasury Bond 20+yr,Euro,ETF,Golden Butterfly,IE00BSKRJX20,1
+13,EUN6.DE,IShares EUR Treasury Bond 0-1yr,Euro,ETF,Golden Butterfly,IE00B3FH7618,1
