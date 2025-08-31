@@ -21,8 +21,6 @@ logger = logging.getLogger(__name__)
 POSITIVE_TYPES = {"Acquisto", "Donazione (ricevuta)", "Saving", "Consolidamento"}
 NEGATIVE_TYPES = {"Vendita", "Donazione (effettuata)", "Spesa"}
 
-def get_operations(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Operation).offset(skip).limit(limit).all()
 
 def get_wallets(db: Session):
     return db.query(models.Wallet).all()
@@ -538,8 +536,8 @@ def create_asset(db: Session, data: dict):
     db.add(a); db.commit(); db.refresh(a)
     return a
 
-def get_operations(db: Session, skip: int = 0, limit: int = 100) -> List[models.Operation]:
-    return db.query(models.Operation).offset(skip).limit(limit).all()
+def get_operations(db: Session, skip: int = 0) -> List[models.Operation]:
+    return db.query(models.Operation).offset(skip).all()
 
 def update_operation(db: Session, op_id: int, operation_in: schemas.OperationIn):
     # Example update implementation

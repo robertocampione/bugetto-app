@@ -30,8 +30,8 @@ app.add_middleware(
 )
 
 @app.get("/operations/", response_model=list[schemas.OperationOut])
-def read_operations(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return crud.get_operations(db, skip=skip, limit=limit)
+def read_operations(db: Session = Depends(get_db)):
+    return crud.get_operations(db)
 
 @app.get("/wallets/", response_model=list[schemas.WalletOut])
 def read_wallets(db: Session = Depends(get_db)):
@@ -185,9 +185,9 @@ def assets_guess(symbol: str, db: Session = Depends(get_db)):
     data = guess_asset_metadata(symbol)
     return schemas.AssetGuessOut(**data)
 
-@app.get("/operations/")
+""" @app.get("/operations/")
 def read_operations(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return crud.get_operations(db, skip=skip, limit=limit)
+    return crud.get_operations(db, skip=skip, limit=limit) """
 
 @app.put("/operations/{op_id}")
 def update_operation(op_id: int, operation: schemas.OperationIn, db: Session = Depends(get_db)):
@@ -196,3 +196,22 @@ def update_operation(op_id: int, operation: schemas.OperationIn, db: Session = D
 @app.post("/operations/{op_id}/duplicate")
 def duplicate_operation(op_id: int, db: Session = Depends(get_db)):
     return crud.duplicate_operation(db, op_id)
+
+# main.py
+from fastapi.responses import JSONResponse
+
+@app.get("/operations/raw")  # solo per test
+def read_operations_raw(db: Session = Depends(get_db)):
+    ops = crud.get_operations(db)
+    # converte orm → dict minimal per non passare da pydantic
+    data = [ { 
+        "id": o.id, "date": str(o.date), "operation_type": o.operation_type,
+        "asset_symbol": o.asset_symbol, "quantity": o.quantity, "wallet_id": o.wallet_id
+    } for o in ops ]
+    return JSONResponse(content=data)
+
+# main.py
+@app.get("/operations/debug-len")
+def operations_len(db: Session = Depends(get_db)):
+    ops = crud.get_operations(db)
+    return {"len": len(ops)}

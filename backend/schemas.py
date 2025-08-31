@@ -1,11 +1,14 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, field_validator
 from typing import Optional
-
+from datetime import date
 
 class OperationOut(BaseModel):
+    # Pydantic v2: abilita lettura da ORM
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     user: Optional[str]
-    date: Optional[str]
+    date: Optional[str]  # manteniamo string per compatibilità con il backend attuale
     operation_type: Optional[str]
     quantity: Optional[float]
     asset_symbol: Optional[str]
@@ -24,20 +27,45 @@ class OperationOut(BaseModel):
     fees: Optional[float]
     dividend_value: Optional[float]
 
-    class Config:
-        from_attributes = True
+    # Normalizza stringhe vuote/NaN e converte string->float per i campi numerici
+    @field_validator(
+        "quantity",
+        "price",
+        "price_manual",
+        "price_avg_day",
+        "price_high_day",
+        "price_low_day",
+        "exchange_rate",
+        "total_value",
+        "fees",
+        "dividend_value",
+        mode="before",
+    )
+    @classmethod
+    def _normalize_numeric(cls, v):
+        if v is None:
+            return None
+        if isinstance(v, str):
+            s = v.strip()
+            if s == "" or s.lower() == "nan":
+                return None
+            # prova a convertire stringhe numeriche in float
+            try:
+                return float(s)
+            except ValueError:
+                return v
+        return v
 
 
 class WalletOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     name: str
     description: Optional[str] = None
 
-    class Config:
-        from_attributes = True
-
 
 class AssetOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     symbol: str
     name: Optional[str]
@@ -47,31 +75,25 @@ class AssetOut(BaseModel):
     isin: Optional[str]
     visible: Optional[bool]
 
-    class Config:
-        from_attributes = True
-
 
 class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     username: str
     email: Optional[str]
     language: Optional[str]
 
-    class Config:
-        from_attributes = True
-
 
 class PortfolioOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     name: str
     owner_id: Optional[int]
     shared: Optional[bool]
 
-    class Config:
-        from_attributes = True
-
 
 class CashflowOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     user: str
     type: str
@@ -83,19 +105,14 @@ class CashflowOut(BaseModel):
     recurrence_months: Optional[int]
     end_date: Optional[str]
 
-    class Config:
-        from_attributes = True
-
 
 class SettingOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     user: str
     base_currency: Optional[str]
     pac_monthly: Optional[float]
     alert_threshold: Optional[float]
-
-    class Config:
-        from_attributes = True
 
 
 class DashboardSummary(BaseModel):
@@ -104,16 +121,21 @@ class DashboardSummary(BaseModel):
     monthly_gain: float
     gain_percentage: float
 
+
 class WalletBase(BaseModel):
     name: str
+
 
 class WalletCreate(WalletBase):
     pass
 
-class WalletOut(WalletBase):
+
+class WalletOut(WalletBase):  # mantenuta per compatibilità con import esistenti
     id: int
+
     class Config:
         orm_mode = True
+
 
 class OperationIn(BaseModel):
     date: str                       # "YYYY-MM-DD"
@@ -121,13 +143,14 @@ class OperationIn(BaseModel):
     asset_symbol: str               # es. "ACN", "BTC-USD", "EUR", "USD"
     quantity: float                 # positiva (segno gestito dal backend)
     wallet_id: int
-    user: Optional[str] = None             
+    user: Optional[str] = None
     broker: Optional[str] = None
     accounting: bool = True
     price_manual: Optional[float] = None    # se presente, sovrascrive il prezzo auto
     purchase_currency: Optional[str] = None # default = currency da AssetInfo o "EUR"
     fees: Optional[float] = 0.0
     comment: Optional[str] = None
+
 
 # --- Asset schemas ---
 class AssetBase(BaseModel):
@@ -139,18 +162,23 @@ class AssetBase(BaseModel):
     isin: str | None = None
     visible: bool = True
 
+
 class AssetCreate(AssetBase):
     symbol: str  # obbligatorio
 
-class AssetOut(AssetBase):
+
+class AssetOut(AssetBase):  # mantenuta per compatibilità con import esistenti
     id: int
+
     class Config:
         orm_mode = True
+
 
 class AssetGuessOut(BaseModel):
     symbol: str
     name: str | None = None
     currency: str | None = None
+
 
 class OperationPreviewOut(BaseModel):
     price: float
@@ -161,4 +189,3 @@ class OperationPreviewOut(BaseModel):
     total_value: float
     quantity: float
     purchase_currency: str
-
