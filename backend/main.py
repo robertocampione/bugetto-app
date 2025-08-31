@@ -184,3 +184,15 @@ def assets_guess(symbol: str, db: Session = Depends(get_db)):
     from .services import guess_asset_metadata
     data = guess_asset_metadata(symbol)
     return schemas.AssetGuessOut(**data)
+
+@app.get("/operations/")
+def read_operations(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return crud.get_operations(db, skip=skip, limit=limit)
+
+@app.put("/operations/{op_id}")
+def update_operation(op_id: int, operation: schemas.OperationIn, db: Session = Depends(get_db)):
+    return crud.update_operation(db, op_id, operation)
+
+@app.post("/operations/{op_id}/duplicate")
+def duplicate_operation(op_id: int, db: Session = Depends(get_db)):
+    return crud.duplicate_operation(db, op_id)

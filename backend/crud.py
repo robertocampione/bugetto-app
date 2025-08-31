@@ -9,6 +9,9 @@ from collections import defaultdict
 from .schemas import OperationIn
 from sqlalchemy import func
 from .database import SessionLocal
+from typing import List
+from . import models, schemas
+
 
 import yfinance as yf
 import logging
@@ -534,3 +537,41 @@ def create_asset(db: Session, data: dict):
     )
     db.add(a); db.commit(); db.refresh(a)
     return a
+
+def get_operations(db: Session, skip: int = 0, limit: int = 100) -> List[models.Operation]:
+    return db.query(models.Operation).offset(skip).limit(limit).all()
+
+def update_operation(db: Session, op_id: int, operation_in: schemas.OperationIn):
+    # Example update implementation
+    op = db.query(models.Operation).get(op_id)
+    if not op:
+        return None
+    for field, value in operation_in.dict(exclude_unset=True).items():
+        setattr(op, field, value)
+    db.commit()
+    db.refresh(op)
+    return op
+
+def duplicate_operation(db: Session, op_id: int):
+    op = db.query(models.Operation).get(op_id)
+    if not op:
+        return None
+    # Copy fields except id
+    new_op = models.Operation(
+        date=op.date,
+        operation_type=op.operation_type,
+        asset_id=op.asset_id,
+        quantity=op.quantity,
+        wallet_id=op.wallet_id,
+        user=op.user,
+        broker=op.broker,
+        accounting=op.accounting,
+        price_manual=op.price_manual,
+        purchase_currency=op.purchase_currency,
+        fees=op.fees,
+        comment=op.comment,
+    )
+    db.add(new_op)
+    db.commit()
+    db.refresh(new_op)
+    return new_op

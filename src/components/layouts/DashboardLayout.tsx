@@ -10,6 +10,8 @@ import {
   Menu,
   ChevronsLeft,
   ChevronsRight,
+  FilePlus2,
+  ListChecks,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -28,7 +30,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const parsed = JSON.parse(storedDark);
       setDarkMode(parsed);
       document.documentElement.classList.toggle("dark", parsed);
+    } else {
+      // default sulla preferenza di sistema
+      const prefersDark =
+        typeof window !== "undefined" &&
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setDarkMode(prefersDark);
+      document.documentElement.classList.toggle("dark", prefersDark);
+      localStorage.setItem("darkMode", JSON.stringify(prefersDark));
     }
+
     if (storedSidebar !== null) {
       setSidebarOpen(JSON.parse(storedSidebar));
     }
@@ -67,6 +79,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <nav className="flex flex-col gap-2 text-sm">
+          {/* Dashboard */}
           <Link
             to="/"
             className={cn(
@@ -80,19 +93,45 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {sidebarOpen && <span>Dashboard</span>}
           </Link>
 
-          <Link
-            to="/operations"
+          {/* Operazioni (gruppo con sottolink) */}
+          <div
             className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-md transition-all",
-              isActive("/operations")
-                ? "bg-muted text-foreground font-semibold"
-                : "hover:bg-muted hover:text-foreground"
+              "flex items-center gap-3 px-3 py-2 rounded-md text-muted-foreground select-none",
+              "cursor-default"
             )}
           >
             <List className="w-5 h-5" />
-            {sidebarOpen && <span>Operazioni</span>}
-          </Link>
+            {sidebarOpen && <span className="font-semibold">Operazioni</span>}
+          </div>
+          <div className={cn("flex flex-col", sidebarOpen ? "ml-9" : "ml-0")}>
+            <Link
+              to="/operations/new"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2 rounded-md transition-all",
+                isActive("/operations") || isActive("/operations/new")
+                  ? "bg-muted text-foreground font-semibold"
+                  : "hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <FilePlus2 className="w-5 h-5" />
+              {sidebarOpen && <span>Nuova operazione</span>}
+            </Link>
 
+            <Link
+              to="/operations/manage"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2 rounded-md transition-all",
+                isActive("/operations/manage")
+                  ? "bg-muted text-foreground font-semibold"
+                  : "hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <ListChecks className="w-5 h-5" />
+              {sidebarOpen && <span>Gestisci operazioni</span>}
+            </Link>
+          </div>
+
+          {/* Altri link (lasciati come nell’old per coerenza visiva) */}
           <Link
             to="/cashflow"
             className={cn(
@@ -156,6 +195,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <p className="text-sm text-muted-foreground">Overview del portafoglio aggiornato</p>
             </div>
           </div>
+
+          {/* Toggle tema */}
           <Button variant="ghost" size="icon" onClick={() => setDarkMode(!darkMode)}>
             {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
