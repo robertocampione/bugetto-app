@@ -1,5 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
+// Import select components for wallet dropdown (same as OperationForm)
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 /** Tipi dal backend */
 interface Operation {
@@ -33,6 +41,33 @@ export default function OperationsManagePage() {
   const [draft, setDraft] = useState<Operation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Lista dei wallet per mappare gli ID ai nomi e popolare il menu a discesa
+  const [wallets, setWallets] = useState<{ id: number; name: string }[]>([]);
+
+  // Carica i wallet al mount della pagina
+  useEffect(() => {
+    // recupera lista wallet dal backend
+    fetch(`${API_BASE}/wallets`)
+      .then((r) => {
+        if (!r.ok) throw new Error(`Fetch wallets failed: ${r.status}`);
+        return r.json();
+      })
+      .then((data: { id: number; name: string }[]) => setWallets(Array.isArray(data) ? data : []))
+      .catch((err) => {
+        console.error(err);
+        setWallets([]);
+      });
+  }, []);
+
+  // Mappa wallet ID → nome per sostituire la visualizzazione degli ID
+  const walletsMap = useMemo(() => {
+    const map: Record<number, string> = {};
+    for (const w of wallets) {
+      map[w.id] = w.name;
+    }
+    return map;
+  }, [wallets]);
 
   useEffect(() => {
     setLoading(true);
@@ -218,13 +253,25 @@ export default function OperationsManagePage() {
                     {/* Wallet */}
                     <td className="px-3 py-2 align-middle">
                       {isEditing ? (
-                        <Input
-                          type="number"
-                          value={draft?.wallet_id ?? 0}
-                          onChange={(e) => onDraftChange("wallet_id", parseInt(e.target.value || "0", 10))}
-                        />
+                        // Usa un menu a discesa (Select) per scegliere il wallet di riferimento
+                        <Select
+                          value={String(draft?.wallet_id ?? "")}
+                          onValueChange={(val) => onDraftChange("wallet_id", Number(val))}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Seleziona wallet" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {wallets.map((w) => (
+                              <SelectItem key={w.id} value={String(w.id)}>
+                                {w.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       ) : (
-                        op.wallet_id
+                        // Visualizza il nome del wallet, se disponibile; altrimenti l'ID
+                        walletsMap[op.wallet_id] ?? op.wallet_id
                       )}
                     </td>
 

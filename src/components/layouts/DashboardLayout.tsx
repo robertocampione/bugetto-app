@@ -12,6 +12,7 @@ import {
   ChevronsRight,
   FilePlus2,
   ListChecks,
+  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -131,6 +132,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
           </div>
 
+          {/* Assets (gruppo con link) */}
+          <div
+            className={cn(
+              "flex items-center gap-3 px-3 py-2 rounded-md text-muted-foreground select-none",
+              "cursor-default"
+            )}
+          >
+            <Layers className="w-5 h-5" />
+            {sidebarOpen && <span className="font-semibold">Asset</span>}
+          </div>
+          <div className={cn("flex flex-col", sidebarOpen ? "ml-9" : "ml-0")}>  
+            <Link
+              to="/assets/manage"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2 rounded-md transition-all",
+                isActive("/assets/manage")
+                  ? "bg-muted text-foreground font-semibold"
+                  : "hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <ListChecks className="w-5 h-5" />
+              {sidebarOpen && <span>Gestisci asset</span>}
+            </Link>
+          </div>
           {/* Altri link (lasciati come nell’old per coerenza visiva) */}
           <Link
             to="/cashflow"

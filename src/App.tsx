@@ -3,6 +3,7 @@ import DashboardPage from './components/Dashboard';
 import OperationsPage from './components/OperationsPage';
 import OperationsManagePage from './components/OperationsManagePage';
 import DashboardLayout from './components/layouts/DashboardLayout';
+import AssetsManagePage from './components/AssetsManagePage';
 
 /**
  * App component defines the top‑level router for the application.
@@ -29,6 +30,9 @@ export default function App() {
             <Route path="new" element={<OperationsPage />} />
             <Route path="manage" element={<OperationsManagePage />} />
           </Route>
+
+          {/* Assets management */}
+          <Route path="/assets/manage" element={<AssetsManagePage />} />
         </Routes>
       </DashboardLayout>
     </Router>
