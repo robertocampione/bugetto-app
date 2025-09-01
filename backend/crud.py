@@ -573,3 +573,11 @@ def duplicate_operation(db: Session, op_id: int):
     db.commit()
     db.refresh(new_op)
     return new_op
+
+def delete_operation(db: Session, op_id: int):
+    op = db.query(models.Operation).get(op_id)
+    if not op:
+        return None
+    db.delete(op)
+    db.commit()
+    return True

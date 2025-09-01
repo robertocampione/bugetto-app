@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, Query, HTTPException
+from fastapi import FastAPI, Depends, Query, HTTPException, Response
 from sqlalchemy.orm import Session
 from backend import models, schemas, crud
 from backend.database import SessionLocal, engine, get_db
@@ -215,3 +215,11 @@ def read_operations_raw(db: Session = Depends(get_db)):
 def operations_len(db: Session = Depends(get_db)):
     ops = crud.get_operations(db)
     return {"len": len(ops)}
+
+@app.delete("/operations/{op_id}")
+def delete_operation_endpoint(op_id: int, db: Session = Depends(get_db)):
+    ok = crud.delete_operation(db, op_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Operation not found")
+    # ritorno semplice; in alternativa potresti usare Response(status_code=204)
+    return {"deleted": op_id}

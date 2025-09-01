@@ -15,13 +15,10 @@ interface Operation {
   purchase_currency?: string | null;
   price?: number | null;
   price_manual?: number | null;
-  price_avg_day?: number | null;
-  price_high_day?: number | null;
-  price_low_day?: number | null;
-  exchange_rate?: number | null;
-  total_value?: number | null;
   fees?: number | null;
   dividend_value?: number | null;
+  exchange_rate?: number | null;
+  total_value?: number | null;
   comment?: string | null;
   accounting?: boolean;
   [key: string]: any;
@@ -39,10 +36,10 @@ export default function OperationsManagePage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${API_BASE}/operations/`, { headers: { Accept: "application/json" } })
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`Failed to fetch operations: ${res.status}`);
-        return res.json();
+    fetch(`${API_BASE}/operations`)
+      .then((r) => {
+        if (!r.ok) throw new Error(`Fetch failed: ${r.status}`);
+        return r.json();
       })
       .then((data: Operation[]) => setOperations(Array.isArray(data) ? data : []))
       .catch((err) => setError(err.message))
@@ -97,6 +94,27 @@ export default function OperationsManagePage() {
     }
   };
 
+  const remove = async (op: Operation) => {
+    if (!window.confirm(`Eliminare definitivamente l'operazione #${op.id}?`)) return;
+    try {
+      const res = await fetch(`${API_BASE}/operations/${op.id}`, {
+        method: "DELETE",
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) {
+        if (res.status === 404) throw new Error("Operazione non trovata (già eliminata?)");
+        throw new Error(`Delete failed: ${res.status}`);
+      }
+      setOperations((ops) => ops.filter((o) => o.id !== op.id));
+      if (editingId === op.id) {
+        setEditingId(null);
+        setDraft(null);
+      }
+    } catch (e: any) {
+      alert(e.message || "Errore nell'eliminazione");
+    }
+  };
+
   const fmtDate = (d?: string | null) => {
     if (!d) return "";
     return d.includes("T") ? d.split("T")[0] : d;
@@ -107,25 +125,18 @@ export default function OperationsManagePage() {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Gestisci operazioni</h2>
         <div className="text-sm text-muted-foreground">
-          Backend: <code>{API_BASE}</code>
+          {loading ? "Caricamento…" : error ? `Errore: ${error}` : `${operations.length} operazioni`}
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-md border border-destructive/30 bg-destructive/10 text-destructive px-3 py-2 text-sm">
-          {error}
-        </div>
-      )}
-
-      <div className="overflow-auto rounded-md border">
+      <div className="w-full overflow-auto rounded-md border">
         <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-muted-foreground">
-            <tr className="text-left">
-              <th className="px-3 py-2">ID</th>
+          <thead className="bg-muted/50">
+            <tr>
               <th className="px-3 py-2">Data</th>
               <th className="px-3 py-2">Tipo</th>
-              <th className="px-3 py-2">Asset</th>
               <th className="px-3 py-2">Quantità</th>
+              <th className="px-3 py-2">Asset</th>
               <th className="px-3 py-2">Wallet</th>
               <th className="px-3 py-2">Utente</th>
               <th className="px-3 py-2">Broker</th>
@@ -146,29 +157,24 @@ export default function OperationsManagePage() {
             ) : operations.length === 0 ? (
               <tr>
                 <td className="px-3 py-6 text-center text-muted-foreground" colSpan={13}>
-                  Nessuna operazione trovata.
+                  Nessuna operazione disponibile
                 </td>
               </tr>
             ) : (
               operations.map((op) => {
                 const isEditing = editingId === op.id;
-                const row = isEditing && draft ? draft : op;
-
                 return (
                   <tr key={op.id} className="border-t">
-                    <td className="px-3 py-2 align-middle">{op.id}</td>
-
                     {/* Data */}
                     <td className="px-3 py-2 align-middle">
                       {isEditing ? (
                         <Input
                           type="date"
-                          className="h-8 w-40 bg-background text-foreground"
-                          value={fmtDate(row.date)}
+                          value={fmtDate(draft?.date)}
                           onChange={(e) => onDraftChange("date", e.target.value)}
                         />
                       ) : (
-                        new Date(op.date).toLocaleDateString()
+                        fmtDate(op.date)
                       )}
                     </td>
 
@@ -176,27 +182,11 @@ export default function OperationsManagePage() {
                     <td className="px-3 py-2 align-middle">
                       {isEditing ? (
                         <Input
-                          type="text"
-                          className="h-8 w-40 bg-background text-foreground"
-                          value={row.operation_type || ""}
+                          value={draft?.operation_type ?? ""}
                           onChange={(e) => onDraftChange("operation_type", e.target.value)}
                         />
                       ) : (
                         op.operation_type
-                      )}
-                    </td>
-
-                    {/* Asset */}
-                    <td className="px-3 py-2 align-middle">
-                      {isEditing ? (
-                        <Input
-                          type="text"
-                          className="h-8 w-32 bg-background text-foreground"
-                          value={row.asset_symbol || ""}
-                          onChange={(e) => onDraftChange("asset_symbol", e.target.value)}
-                        />
-                      ) : (
-                        op.asset_symbol || ""
                       )}
                     </td>
 
@@ -205,13 +195,23 @@ export default function OperationsManagePage() {
                       {isEditing ? (
                         <Input
                           type="number"
-                          step="0.0001"
-                          className="h-8 w-32 text-right bg-background text-foreground"
-                          value={row.quantity ?? 0}
-                          onChange={(e) => onDraftChange("quantity", Number(e.target.value))}
+                          value={draft?.quantity ?? 0}
+                          onChange={(e) => onDraftChange("quantity", parseFloat(e.target.value))}
                         />
                       ) : (
                         op.quantity
+                      )}
+                    </td>
+
+                    {/* Asset */}
+                    <td className="px-3 py-2 align-middle">
+                      {isEditing ? (
+                        <Input
+                          value={draft?.asset_symbol ?? ""}
+                          onChange={(e) => onDraftChange("asset_symbol", e.target.value)}
+                        />
+                      ) : (
+                        op.asset_symbol ?? "—"
                       )}
                     </td>
 
@@ -220,9 +220,8 @@ export default function OperationsManagePage() {
                       {isEditing ? (
                         <Input
                           type="number"
-                          className="h-8 w-24 text-right bg-background text-foreground"
-                          value={row.wallet_id ?? 0}
-                          onChange={(e) => onDraftChange("wallet_id", Number(e.target.value))}
+                          value={draft?.wallet_id ?? 0}
+                          onChange={(e) => onDraftChange("wallet_id", parseInt(e.target.value || "0", 10))}
                         />
                       ) : (
                         op.wallet_id
@@ -233,13 +232,11 @@ export default function OperationsManagePage() {
                     <td className="px-3 py-2 align-middle">
                       {isEditing ? (
                         <Input
-                          type="text"
-                          className="h-8 w-32 bg-background text-foreground"
-                          value={row.user || ""}
+                          value={draft?.user ?? ""}
                           onChange={(e) => onDraftChange("user", e.target.value)}
                         />
                       ) : (
-                        op.user || ""
+                        op.user ?? "—"
                       )}
                     </td>
 
@@ -247,13 +244,11 @@ export default function OperationsManagePage() {
                     <td className="px-3 py-2 align-middle">
                       {isEditing ? (
                         <Input
-                          type="text"
-                          className="h-8 w-32 bg-background text-foreground"
-                          value={row.broker || ""}
+                          value={draft?.broker ?? ""}
                           onChange={(e) => onDraftChange("broker", e.target.value)}
                         />
                       ) : (
-                        op.broker || ""
+                        op.broker ?? "—"
                       )}
                     </td>
 
@@ -261,13 +256,11 @@ export default function OperationsManagePage() {
                     <td className="px-3 py-2 align-middle">
                       {isEditing ? (
                         <Input
-                          type="text"
-                          className="h-8 w-24 bg-background text-foreground"
-                          value={row.purchase_currency || ""}
+                          value={draft?.purchase_currency ?? ""}
                           onChange={(e) => onDraftChange("purchase_currency", e.target.value)}
                         />
                       ) : (
-                        op.purchase_currency || ""
+                        op.purchase_currency ?? "—"
                       )}
                     </td>
 
@@ -277,12 +270,11 @@ export default function OperationsManagePage() {
                         <Input
                           type="number"
                           step="0.0001"
-                          className="h-8 w-28 text-right bg-background text-foreground"
-                          value={row.price_manual ?? 0}
-                          onChange={(e) => onDraftChange("price_manual", Number(e.target.value))}
+                          value={draft?.price_manual ?? 0}
+                          onChange={(e) => onDraftChange("price_manual", parseFloat(e.target.value))}
                         />
                       ) : (
-                        row.price_manual ?? ""
+                        op.price_manual ?? "—"
                       )}
                     </td>
 
@@ -291,13 +283,12 @@ export default function OperationsManagePage() {
                       {isEditing ? (
                         <Input
                           type="number"
-                          step="0.0001"
-                          className="h-8 w-28 text-right bg-background text-foreground"
-                          value={row.fees ?? 0}
-                          onChange={(e) => onDraftChange("fees", Number(e.target.value))}
+                          step="0.01"
+                          value={draft?.fees ?? 0}
+                          onChange={(e) => onDraftChange("fees", parseFloat(e.target.value))}
                         />
                       ) : (
-                        row.fees ?? ""
+                        op.fees ?? "—"
                       )}
                     </td>
 
@@ -305,13 +296,11 @@ export default function OperationsManagePage() {
                     <td className="px-3 py-2 align-middle">
                       {isEditing ? (
                         <Input
-                          type="text"
-                          className="h-8 w-56 bg-background text-foreground"
-                          value={row.comment || ""}
+                          value={draft?.comment ?? ""}
                           onChange={(e) => onDraftChange("comment", e.target.value)}
                         />
                       ) : (
-                        op.comment || ""
+                        op.comment ?? "—"
                       )}
                     </td>
 
@@ -345,6 +334,12 @@ export default function OperationsManagePage() {
                             className="rounded-md border px-3 py-1 hover:bg-muted"
                           >
                             Duplica
+                          </button>
+                          <button
+                            onClick={() => remove(op)}
+                            className="rounded-md border px-3 py-1 hover:bg-destructive/10 text-destructive border-destructive/50"
+                          >
+                            Elimina
                           </button>
                         </div>
                       )}
