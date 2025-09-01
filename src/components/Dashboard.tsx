@@ -126,7 +126,7 @@ export default function DashboardPage() {
       {/* Tabella Asset */}
       <div className="mt-6">
         <AssetsTable />
-        <WalletSnapshot />
+        {/* <WalletSnapshot /> */}
       </div>
       
       {/* ✅ GRAFICO DISTRIBUZIONE PER CATEGORIA */}
@@ -141,6 +141,12 @@ export default function DashboardPage() {
           <AccordionTrigger>📅 Storico allocazione per categoria</AccordionTrigger>
           <AccordionContent>
             <CategoryHistoryChart />
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="portafoglio">
+          <AccordionTrigger>💰 Dettaglio Wallets</AccordionTrigger>
+          <AccordionContent>
+            <WalletSnapshot /> 
           </AccordionContent>
         </AccordionItem>
     </Accordion>  
