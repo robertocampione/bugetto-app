@@ -200,22 +200,6 @@ def duplicate_operation(op_id: int, db: Session = Depends(get_db)):
 # main.py
 from fastapi.responses import JSONResponse
 
-@app.get("/operations/raw")  # solo per test
-def read_operations_raw(db: Session = Depends(get_db)):
-    ops = crud.get_operations(db)
-    # converte orm → dict minimal per non passare da pydantic
-    data = [ { 
-        "id": o.id, "date": str(o.date), "operation_type": o.operation_type,
-        "asset_symbol": o.asset_symbol, "quantity": o.quantity, "wallet_id": o.wallet_id
-    } for o in ops ]
-    return JSONResponse(content=data)
-
-# main.py
-@app.get("/operations/debug-len")
-def operations_len(db: Session = Depends(get_db)):
-    ops = crud.get_operations(db)
-    return {"len": len(ops)}
-
 @app.delete("/operations/{op_id}")
 def delete_operation_endpoint(op_id: int, db: Session = Depends(get_db)):
     ok = crud.delete_operation(db, op_id)
@@ -223,3 +207,11 @@ def delete_operation_endpoint(op_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Operation not found")
     # ritorno semplice; in alternativa potresti usare Response(status_code=204)
     return {"deleted": op_id}
+
+@app.delete("/assets/{asset_id}")
+def delete_operation_endpoint(asset_id: int, db: Session = Depends(get_db)):
+    ok = crud.delete_asset(db, asset_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    # ritorno semplice; in alternativa potresti usare Response(status_code=204)
+    return {"deleted": asset_id}

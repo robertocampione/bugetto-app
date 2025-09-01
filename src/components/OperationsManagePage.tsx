@@ -182,7 +182,7 @@ export default function OperationsManagePage() {
               <th className="px-3 py-2">Azioni</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="text-center">
             {loading ? (
               <tr>
                 <td className="px-3 py-4" colSpan={13}>

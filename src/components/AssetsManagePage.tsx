@@ -58,6 +58,27 @@ export default function AssetsManagePage() {
     setDraft((cur) => (cur ? { ...cur, [field]: value } : cur));
   };
 
+    const remove = async (asset: Asset) => {
+    if (!window.confirm(`Eliminare definitivamente l'asset #${asset.id}?`)) return;
+    try {
+      const res = await fetch(`${API_BASE}/assets/${asset.id}`, {
+        method: "DELETE",
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) {
+        if (res.status === 404) throw new Error("Asset non trovato (già eliminato?)");
+        throw new Error(`Delete failed: ${res.status}`);
+      }
+      setAssets((assets) => assets.filter((o) => o.id !== asset.id));
+      if (editingId === asset.id) {
+        setEditingId(null);
+        setDraft(null);
+      }
+    } catch (e: any) {
+      alert(e.message || "Errore nell'eliminazione");
+    }
+  };
+
   const saveEdit = async () => {
     if (!draft) return;
     if (!window.confirm("Confermi le modifiche a questo asset?")) return;
@@ -100,7 +121,7 @@ export default function AssetsManagePage() {
               <th className="px-3 py-2">Azioni</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="text-center">
             {loading ? (
               <tr>
                 <td className="px-3 py-4" colSpan={8}>
@@ -207,9 +228,12 @@ export default function AssetsManagePage() {
                           </Button>
                         </>
                       ) : (
-                        <Button size="sm" variant="secondary" onClick={() => startEdit(a)}>
-                          Modifica
-                        </Button>
+                        <><Button size="sm" variant="secondary" onClick={() => startEdit(a)}>
+                            Modifica
+                          </Button>
+                          <Button size="sm" variant="secondary" onClick={() => remove(a)}>
+                              Elimina
+                          </Button></>
                       )}
                     </td>
                   </tr>

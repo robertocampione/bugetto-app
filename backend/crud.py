@@ -581,3 +581,11 @@ def delete_operation(db: Session, op_id: int):
     db.delete(op)
     db.commit()
     return True
+
+def delete_asset(db: Session, asset_id: int):
+    asset = db.query(models.AssetInfo).get(asset_id)
+    if not asset:
+        return None
+    db.delete(asset)
+    db.commit()
+    return True

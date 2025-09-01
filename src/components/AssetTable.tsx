@@ -65,49 +65,49 @@ export default function AssetsTable() {
 
   return (
     <Card className="p-4 overflow-x-auto">
-      <h2 className="text-lg font-semibold mb-2">Asset in portafoglio</h2>
+      <h2 className="text-1g font-semibold mb-2">Asset in portafoglio</h2>
       <Table className="text-sm border rounded-xl overflow-hidden">
         <TableHeader className="bg-muted text-muted-foreground">
           <TableRow className="h-8">
-            <TableHead>Nome</TableHead>
-            <TableHead className="text-right">Simbolo</TableHead>
-            <TableHead className="text-right">Tipo</TableHead>
-            <TableHead className="text-right">Quantità</TableHead>
-            <TableHead className="text-right">Prezzo Medio</TableHead>
-            <TableHead className="text-right">Prezzo Attuale</TableHead>
-            <TableHead className="text-right">Valore Totale</TableHead>
-            <TableHead className="text-right">Delta €</TableHead>
-            <TableHead className="text-right">Delta %</TableHead>
+            <TableHead className="text-center">Nome</TableHead>
+            <TableHead className="text-center">Simbolo</TableHead>
+            <TableHead className="text-center">Tipo</TableHead>
+            <TableHead className="text-center">Quantità</TableHead>
+            <TableHead className="text-center">Prezzo Medio</TableHead>
+            <TableHead className="text-center">Prezzo Attuale</TableHead>
+            <TableHead className="text-center">Valore Totale</TableHead>
+            <TableHead className="text-center">Delta €</TableHead>
+            <TableHead className="text-center">Delta %</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody >
           {rows.map((row) => (
             <TableRow key={row.symbol} className="hover:bg-muted/30 transition-colors">
-              <TableCell className="font-medium">
+              <TableCell className="font-medium text-center">
                   {row.name}
               </TableCell>
-              <TableCell className="text-right font-mono">
+              <TableCell className="text-center font-mono">
                 {row.symbol}
               </TableCell>
-              <TableCell className="text-right font-mono">
+              <TableCell className="text-center font-mono">
                 {row.type}
               </TableCell>
-              <TableCell className="text-right font-mono">
+              <TableCell className="text-center font-mono">
                 {row.quantity.toLocaleString(undefined, { minimumFractionDigits: 4 })}
               </TableCell>
-              <TableCell className="text-right font-mono">
+              <TableCell className="text-center font-mono">
                 € {row.average_price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </TableCell>
-              <TableCell className="text-right font-mono">
+              <TableCell className="text-center font-mono">
                 € {row.current_price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </TableCell>
-              <TableCell className="text-right font-mono">
+              <TableCell className="text-center font-mono">
                 € {(row.current_price * row.quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </TableCell>
-              <TableCell className={cn("text-right font-mono", row.delta_value >= 0 ? "text-green-600" : "text-red-600")}>
+              <TableCell className={cn("text-center font-mono", row.delta_value >= 0 ? "text-green-600" : "text-red-600")}>
                 € {row.delta_value.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </TableCell>
-              <TableCell className={cn("text-right font-mono", row.delta_percentage >= 0 ? "text-green-600" : "text-red-600")}>
+              <TableCell className={cn("text-center font-mono", row.delta_percentage >= 0 ? "text-green-600" : "text-red-600")}>
                 {row.delta_percentage.toLocaleString(undefined, { minimumFractionDigits: 2 })}%
               </TableCell>
             </TableRow>
