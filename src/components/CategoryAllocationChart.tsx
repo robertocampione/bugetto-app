@@ -14,8 +14,11 @@ const colors: Record<string, string> = {
 export default function CategoryAllocationChart() {
   const [data, setData] = useState<{ category: string, value: number, allocation_pct: number }[]>([])
 
+  const API_BASE =
+  (import.meta as any).env?.VITE_API_BASE?.replace(/\/+$/, "") || "http://127.0.0.1:8000";
+
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/dashboard/allocation/categories-group")
+    fetch(`${API_BASE}/dashboard/allocation/categories-group`)
       .then(res => res.json())
       .then((json) => setData(json))
   }, [])
@@ -35,7 +38,7 @@ export default function CategoryAllocationChart() {
             label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(1)}%`}
             labelLine={false}
           >
-            {data.map((entry, idx) => (
+            {data.map((entry) => (
               <Cell key={entry.category} fill={colors[entry.category] || "#8884d8"} />
             ))}
           </Pie>
