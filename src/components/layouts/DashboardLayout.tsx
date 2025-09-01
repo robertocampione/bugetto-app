@@ -75,7 +75,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       >
         <div className="text-xl font-bold flex items-center gap-2 mb-8">
-          <span role="img" aria-label="logo">💸</span>
+          <img src="/bugetto.svg" alt="Bugetto Logo" width={64} height={64} />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
           {sidebarOpen && <span>Bugetto</span>}
         </div>
 
