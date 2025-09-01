@@ -45,6 +45,8 @@ type AssetMeta = {
   visible: boolean;
 };
 
+const API_BASE =
+  (import.meta as any).env?.VITE_API_BASE?.replace(/\/+$/, "") || "http://127.0.0.1:8000";
 // -----------------------------------------------------------
 // Subcomponent: Breakdown per wallet per singolo asset (riga espansa)
 // -----------------------------------------------------------
@@ -164,7 +166,7 @@ export default function AssetsTable() {
   // --- fetch asset list (visibili e non Liquidi)
   useEffect(() => {
     const fetchAssets = async () => {
-      const res = await fetch("http://127.0.0.1:8000/assets/visible/");
+      const res = await fetch(`${API_BASE}/assets/visible/`);
       const data = await res.json();
       const filtered = data.filter(
         (a: AssetMeta) => a.visible === true && a.type !== "Liquidi"
@@ -180,7 +182,7 @@ export default function AssetsTable() {
       const allRows: AssetRow[] = [];
       for (const asset of assets) {
         const res = await fetch(
-          `http://127.0.0.1:8000/assets/${asset.symbol}/delta`
+          `${API_BASE}/assets/${asset.symbol}/delta`
         );
         const data = await res.json();
         if (data.quantity > 0) {

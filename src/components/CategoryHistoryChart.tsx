@@ -19,9 +19,11 @@ type CategoryHistoryEntry = {
 
 export default function CategoryHistoryChart() {
   const [historyData, setHistoryData] = useState<CategoryHistoryEntry[]>([]);
+  const API_BASE =
+     (import.meta as any).env?.VITE_API_BASE?.replace(/\/+$/, "") || "http://127.0.0.1:8000";
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/dashboard/allocation/categories-history")
+    fetch(`${API_BASE}/dashboard/allocation/categories-history`)
       .then((res) => res.json())
       .then((data) => setHistoryData(data))
       .catch((err) => console.error("Errore nel recupero dei dati storici:", err));

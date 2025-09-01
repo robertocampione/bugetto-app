@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import AssetsTable from "./AssetTable";
+import WalletSnapshot from "./WalletSnapshot";
 import CategoryAllocationChart from "./CategoryAllocationChart";
 import CategoryHistoryChart from "./CategoryHistoryChart";
 
@@ -17,25 +18,28 @@ export default function DashboardPage() {
   const [liquidAssets, setLiquidAssets] = useState<any[]>([]);
   const [showBreakdown, setShowBreakdown] = useState(false);
 
+  const API_BASE =
+  (import.meta as any).env?.VITE_API_BASE?.replace(/\/+$/, "") || "http://127.0.0.1:8000";
+
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/dashboard/summary")
+    fetch("${API_BASE}/dashboard/summary")
       .then((res) => res.json())
       .then((data) => setSummary(data));
 
     const fetchLiquidAssets = async () => {
-      const res = await fetch("http://127.0.0.1:8000/assets/visible");
+      const res = await fetch("${API_BASE}/assets/visible");
       const assets = await res.json();
 
       const liquid = assets.filter((a: any) => a.visible && a.type === "Liquidi");
 
       const detailed = await Promise.all(
         liquid.map(async (asset: any) => {
-          const q = await fetch(`http://127.0.0.1:8000/assets/${asset.symbol}/total-quantity`);
+          const q = await fetch(`${API_BASE}/assets/${asset.symbol}/total-quantity`);
           const quantity = await q.json();
 
           let conversion_rate = 1;
           if (asset.symbol !== "EUR") {
-            const convRes = await fetch(`http://127.0.0.1:8000/convert?from=${asset.symbol}&to=EUR`);
+            const convRes = await fetch(`${API_BASE}/convert?from=${asset.symbol}&to=EUR`);
             conversion_rate = await convRes.json();
           }
 
@@ -122,6 +126,7 @@ export default function DashboardPage() {
       {/* Tabella Asset */}
       <div className="mt-6">
         <AssetsTable />
+        {/* <WalletSnapshot /> */}
       </div>
       
       {/* ✅ GRAFICO DISTRIBUZIONE PER CATEGORIA */}
@@ -136,6 +141,12 @@ export default function DashboardPage() {
           <AccordionTrigger>📅 Storico allocazione per categoria</AccordionTrigger>
           <AccordionContent>
             <CategoryHistoryChart />
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="portafoglio">
+          <AccordionTrigger>💰 Dettaglio Wallets</AccordionTrigger>
+          <AccordionContent>
+            <WalletSnapshot />
           </AccordionContent>
         </AccordionItem>
     </Accordion>  

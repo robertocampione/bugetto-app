@@ -1,3 +1,4 @@
+// src/components/WalletSnapshot.tsx
 import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { fetchWalletSummary } from "@/utils/api";
