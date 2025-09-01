@@ -1,15 +1,14 @@
 # backend/crud.py
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, text
 from backend import models
 from .models import Operation, AssetInfo, Wallet
 from .services import get_conversion_rate, get_current_price
 from datetime import datetime
 from collections import defaultdict
 from .schemas import OperationIn
-from sqlalchemy import func
 from .database import SessionLocal
-from typing import List
+from typing import Dict, List, Tuple
 from . import models, schemas
 
 
@@ -589,3 +588,138 @@ def delete_asset(db: Session, asset_id: int):
     db.delete(asset)
     db.commit()
     return True
+
+def _get_price_in_base(db, symbol: str, base_currency: str) -> float:
+    """
+    Ritorna il prezzo corrente in valuta base.
+    Sostituisci con la tua funzione reale se già esiste (es. services.get_last_price(..)).
+    Fallback: ultimo price/price_manual disponibile nelle operations di quel symbol.
+    """
+    # Prova a prendere l'ultimo prezzo esplicito nelle operations (manuale o auto)
+    sql = text("""
+        SELECT COALESCE(o.price, o.price_manual) AS p, o.purchase_currency
+        FROM operations o
+        WHERE o.asset_symbol = :symbol AND o.accounting = 1
+        ORDER BY date(o.date) DESC, o.id DESC
+        LIMIT 1
+    """)
+    row = db.execute(sql, {"symbol": symbol}).first()
+    if not row or row.p is None:
+        return 0.0
+    price = float(row.p)
+    # qui potresti convertire in base_currency se diverso (usa il tuo FX engine se presente)
+    # per ora assumiamo già in EUR (base) o che il backend gestisca i FX a monte
+    return price
+
+def get_wallets_summary(db) -> Tuple[float, List[dict]]:
+    """
+    Aggrega quantità per (wallet, asset), valorizza con prezzo corrente e
+    calcola top-assets e % sul portafoglio.
+    """
+    # Prendi base_currency dalle settings (prima riga o default EUR)
+    base_sql = text("SELECT COALESCE(MAX(base_currency), 'EUR') FROM settings")
+    base_currency = db.execute(base_sql).scalar() or "EUR"
+
+    # Quantità per wallet/asset
+    q_sql = text("""
+        SELECT o.wallet_id AS wallet_id, w.name AS wallet_name, o.asset_symbol AS symbol,
+               SUM(o.quantity) AS qty
+        FROM operations o
+        JOIN wallets w ON w.id = o.wallet_id
+        WHERE o.accounting = 1
+        GROUP BY o.wallet_id, w.name, o.asset_symbol
+        HAVING ABS(SUM(o.quantity)) > 1e-12
+        ORDER BY w.name ASC
+    """)
+    rows = db.execute(q_sql).mappings().all()
+
+    # Valorizza e raggruppa per wallet
+    wallet_map: Dict[int, dict] = {}
+    # cache prezzi per simbolo
+    price_cache: Dict[str, float] = {}
+
+    for r in rows:
+        wid = r["wallet_id"]
+        wname = r["wallet_name"]
+        symbol = r["symbol"]
+        qty = float(r["qty"])
+
+        if symbol not in price_cache:
+            price_cache[symbol] = _get_price_in_base(db, symbol, base_currency)
+        price = price_cache[symbol]
+        value = qty * price
+
+        if wid not in wallet_map:
+            wallet_map[wid] = {
+                "wallet_id": wid,
+                "wallet_name": wname,
+                "total_value": 0.0,
+                "assets": {},  # symbol -> (qty, value)
+            }
+        wallet_map[wid]["total_value"] += value
+        wallet_map[wid]["assets"].setdefault(symbol, [0.0, 0.0])
+        wallet_map[wid]["assets"][symbol][0] += qty
+        wallet_map[wid]["assets"][symbol][1] += value
+
+    total_portfolio_value = sum(w["total_value"] for w in wallet_map.values())
+
+    items: List[dict] = []
+    for w in wallet_map.values():
+        assets_sorted = sorted(
+            [{"symbol": s, "qty": a[0], "value": a[1]} for s, a in w["assets"].items()],
+            key=lambda x: x["value"],
+            reverse=True
+        )
+        items.append({
+            "wallet_id": w["wallet_id"],
+            "wallet_name": w["wallet_name"],
+            "total_value": w["total_value"],
+            "percent_of_portfolio": (w["total_value"] / total_portfolio_value * 100.0) if total_portfolio_value > 0 else 0.0,
+            "assets_count": len(assets_sorted),
+            "top_assets": assets_sorted[:3],
+        })
+
+    # Ordina per valore desc
+    items.sort(key=lambda i: i["total_value"], reverse=True)
+    return total_portfolio_value, items
+
+def get_asset_breakdown_by_wallet(db, symbol: str) -> dict:
+    """
+    Breakdown per asset → wallet, con % sull'asset.
+    """
+    base_sql = text("SELECT COALESCE(MAX(base_currency), 'EUR') FROM settings")
+    base_currency = db.execute(base_sql).scalar() or "EUR"
+
+    q_sql = text("""
+        SELECT o.wallet_id AS wallet_id, w.name AS wallet_name, SUM(o.quantity) AS qty
+        FROM operations o
+        JOIN wallets w ON w.id = o.wallet_id
+        WHERE o.accounting = 1 AND o.asset_symbol = :symbol
+        GROUP BY o.wallet_id, w.name
+        HAVING ABS(SUM(o.quantity)) > 1e-12
+        ORDER BY w.name ASC
+    """)
+    rows = db.execute(q_sql, {"symbol": symbol}).mappings().all()
+
+    price = _get_price_in_base(db, symbol, base_currency)
+    total_qty = sum(float(r["qty"]) for r in rows)
+    breakdown = []
+    for r in rows:
+        qty = float(r["qty"])
+        val = qty * price
+        pct = (qty / total_qty * 100.0) if total_qty > 0 else 0.0
+        breakdown.append({
+            "wallet_id": r["wallet_id"],
+            "wallet_name": r["wallet_name"],
+            "qty": qty,
+            "value": val,
+            "percent_of_asset": pct
+        })
+
+    return {
+        "symbol": symbol,
+        "price_used": price,
+        "total_qty": total_qty,
+        "total_value": total_qty * price,
+        "breakdown": breakdown
+    }
