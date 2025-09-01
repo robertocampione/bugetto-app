@@ -146,7 +146,7 @@ export default function DashboardPage() {
         <AccordionItem value="portafoglio">
           <AccordionTrigger>💰 Dettaglio Wallets</AccordionTrigger>
           <AccordionContent>
-            <WalletSnapshot /> 
+            <WalletSnapshot />
           </AccordionContent>
         </AccordionItem>
     </Accordion>  
