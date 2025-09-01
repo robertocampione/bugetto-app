@@ -215,3 +215,22 @@ def delete_operation_endpoint(asset_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Asset not found")
     # ritorno semplice; in alternativa potresti usare Response(status_code=204)
     return {"deleted": asset_id}
+
+@app.get("/wallets/summary", response_model=schemas.WalletSummaryResponse)
+def wallets_summary(db: Session = Depends(get_db)):
+    total, items = crud.get_wallets_summary(db)
+    return schemas.WalletSummaryResponse(
+        total_portfolio_value=total,
+        items=[schemas.WalletSummaryItem(**i) for i in items]
+    )
+
+@app.get("/assets/{symbol}/by-wallet", response_model=schemas.AssetByWalletResponse)
+def asset_by_wallet(symbol: str, db: Session = Depends(get_db)):
+    data = crud.get_asset_breakdown_by_wallet(db, symbol)
+    return schemas.AssetByWalletResponse(
+        symbol=data["symbol"],
+        price_used=data["price_used"],
+        total_qty=data["total_qty"],
+        total_value=data["total_value"],
+        breakdown=[schemas.AssetWalletBreakdownItem(**x) for x in data["breakdown"]],
+    )

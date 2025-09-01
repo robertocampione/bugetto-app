@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict, field_validator
-from typing import Optional
+from typing import List, Optional
 from datetime import date
 
 class OperationOut(BaseModel):
@@ -189,3 +189,34 @@ class OperationPreviewOut(BaseModel):
     total_value: float
     quantity: float
     purchase_currency: str
+
+class WalletTopAsset(BaseModel):
+    symbol: str
+    qty: float
+    value: float
+
+class WalletSummaryItem(BaseModel):
+    wallet_id: int
+    wallet_name: str
+    total_value: float
+    percent_of_portfolio: float
+    assets_count: int
+    top_assets: List[WalletTopAsset]
+
+class WalletSummaryResponse(BaseModel):
+    total_portfolio_value: float
+    items: List[WalletSummaryItem]
+
+class AssetWalletBreakdownItem(BaseModel):
+    wallet_id: int
+    wallet_name: str
+    qty: float
+    value: float
+    percent_of_asset: float
+
+class AssetByWalletResponse(BaseModel):
+    symbol: str
+    price_used: float
+    total_qty: float
+    total_value: float
+    breakdown: List[AssetWalletBreakdownItem]
