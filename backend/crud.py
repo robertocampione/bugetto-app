@@ -557,7 +557,7 @@ def duplicate_operation(db: Session, op_id: int):
     new_op = models.Operation(
         date=op.date,
         operation_type=op.operation_type,
-        asset_id=op.asset_id,
+        asset_symbol=op.asset_symbol,
         quantity=op.quantity,
         wallet_id=op.wallet_id,
         user=op.user,
@@ -591,25 +591,50 @@ def delete_asset(db: Session, asset_id: int):
 
 def _get_price_in_base(db, symbol: str, base_currency: str) -> float:
     """
-    Ritorna il prezzo corrente in valuta base.
-    Sostituisci con la tua funzione reale se già esiste (es. services.get_last_price(..)).
-    Fallback: ultimo price/price_manual disponibile nelle operations di quel symbol.
+    Ritorna il prezzo corrente del simbolo nella valuta base.
+    Logica:
+      1) prova get_current_price(symbol)
+      2) fallback: ultimo prezzo NON nullo/zero da operations,
+         escludendo i tipi che non definiscono il prezzo (Movimento Interno, Saving, Spesa, ecc.)
+      3) converte dalla currency dell'asset alla base_currency se necessario
     """
-    # Prova a prendere l'ultimo prezzo esplicito nelle operations (manuale o auto)
-    sql = text("""
-        SELECT COALESCE(o.price, o.price_manual) AS p, o.purchase_currency
-        FROM operations o
-        WHERE o.asset_symbol = :symbol AND o.accounting = 1
-        ORDER BY date(o.date) DESC, o.id DESC
-        LIMIT 1
-    """)
-    row = db.execute(sql, {"symbol": symbol}).first()
-    if not row or row.p is None:
-        return 0.0
-    price = float(row.p)
-    # qui potresti convertire in base_currency se diverso (usa il tuo FX engine se presente)
-    # per ora assumiamo già in EUR (base) o che il backend gestisca i FX a monte
-    return price
+    # 0) EUR / liquidità: prezzo=1 nella propria valuta
+    asset = db.query(AssetInfo).filter(func.lower(AssetInfo.symbol) == symbol.lower()).first()
+    if asset:
+        is_liquidity = ((asset.type or "").lower() == "liquidi") or ((asset.category or "").lower() == "liquidità")
+        if symbol.upper() == "EUR" or is_liquidity:
+            return 1.0
+
+    # 1) Prezzo corrente dal servizio (se disponibile)
+    try:
+        p_now = get_current_price(symbol)
+        if p_now and p_now > 0:
+            price_eur = float(p_now)
+        else:
+            raise ValueError("no live price")
+    except Exception:
+        # 2) Fallback: ultimo prezzo valido dalle operations
+        sql = text("""
+            SELECT COALESCE(NULLIF(o.price,0), NULLIF(o.price_manual,0)) AS p
+            FROM operations o
+            WHERE o.asset_symbol = :symbol
+              AND o.accounting = 1
+              AND COALESCE(o.price, o.price_manual) IS NOT NULL
+              AND COALESCE(o.price, o.price_manual) > 0
+              AND o.operation_type NOT IN ('Movimento Interno', 'Saving', 'Spesa')
+            ORDER BY date(o.date) DESC, o.id DESC
+            LIMIT 1
+        """)
+        row = db.execute(sql, {"symbol": symbol}).first()
+        price_eur = float(row.p) if row and row.p is not None else 0.0
+
+    # 3) Conversione in base currency se serve
+    if asset and asset.currency and asset.currency.upper() != (base_currency or "EUR").upper():
+        rate = get_conversion_rate(asset.currency.upper(), (base_currency or "EUR").upper()) or 1.0
+        price_eur *= rate
+
+    return price_eur or 0.0
+
 
 def get_wallets_summary(db) -> Tuple[float, List[dict]]:
     """
